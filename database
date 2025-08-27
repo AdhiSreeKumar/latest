@@ -131,14 +131,22 @@ INSERT INTO brands (id, name, description, created_at) VALUES
 ('','Depo', '', NOW());
 
 
+-- Insert categories
 INSERT INTO categories (name, description, created_at, updated_at) VALUES
-('Batteries',   'Car batteries and related accessories', NOW(), NOW()),
-('Engine',      'Engine parts and components',            NOW(), NOW()),
-('Brakes',      'Brake systems and parts',                NOW(), NOW()),
-('Electrical',  'Electrical components and wiring',       NOW(), NOW()),
-('Lighting',    'Lights and lighting systems',            NOW(), NOW()),
-('Suspension',  'Suspension components',                  NOW(), NOW()),
-('Interior',    'Interior parts and accessories',         NOW(), NOW());
+('Batteries', 'Car batteries and related accessories', NOW(), NOW()),
+('Engine', 'Engine parts and components', NOW(), NOW()),
+('Brakes', 'Brake systems and parts', NOW(), NOW()),
+('Brake System', 'Brake pads, discs, and calipers', NOW(), NOW()),
+('Electrical', 'Electrical components and wiring', NOW(), NOW()),
+('Lighting', 'Lights and lighting systems', NOW(), NOW()),
+('Suspension', 'Suspension components', NOW(), NOW()),
+('Suspension and Arms', 'Shock absorbers and suspension arms', NOW(), NOW()),
+('Interior', 'Interior parts and accessories', NOW(), NOW()),
+('Interior and comfort', 'Audio, steering wheels, mats, multimedia', NOW(), NOW()),
+('Filters', 'Oil, air, and fuel filters', NOW(), NOW()),
+('Tyres and Alloys', 'Tyres, alloy wheels, and related accessories', NOW(), NOW()),
+('Wiper Blades', 'Windshield wipers and washer accessories', NOW(), NOW()),
+('Body Parts', 'Bumpers, headlights, panels, and other body parts', NOW(), NOW());
 
 
 INSERT INTO users (full_name, email, password, role) VALUES
