@@ -1,0 +1,158 @@
+Create Database name: autoparts
+
+
+Inside the autoparts database, click "SQL" tab
+Paste the following SQL code:
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(255),
+    role ENUM('admin', 'seller', 'buyer') DEFAULT 'buyer',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Orders Table (simplified version based on your structure)
+CREATE TABLE orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Create the categories table
+CREATE TABLE categories (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  name varchar(100) NOT NULL,
+  description text DEFAULT NULL,
+  created_at timestamp NOT NULL DEFAULT current_timestamp(),
+  updated_at timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (id),
+  UNIQUE KEY name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Create the brands table
+CREATE TABLE brands (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create the products table with all fields
+CREATE TABLE products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    seller_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    brand_id INT NOT NULL,
+    vehicle_type VARCHAR(50) NOT NULL,
+    compatible_models TEXT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    category_id INT NOT NULL,
+    description TEXT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    availability VARCHAR(50) NOT NULL,
+    warranty VARCHAR(100) NOT NULL,
+    delivery_time VARCHAR(50) NOT NULL,
+    quantity INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE RESTRICT,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+
+-- Order Items Table
+CREATE TABLE order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+
+
+
+-- Complaints Table
+CREATE TABLE complaints (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    order_id INT,
+    subject VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (order_id) REFERENCES orders(id)
+);
+
+CREATE TABLE reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    order_id INT NOT NULL,
+    rating INT NOT NULL,
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (order_id) REFERENCES orders(id)
+);
+
+
+
+
+
+
+
+INSERT INTO brands (id, name, description, created_at) VALUES
+('','Exide', '', NOW()),
+('','Bosch', '', NOW()),
+('','TVS', '', NOW()),
+('','MRF', '', NOW()),
+('','Hella', '', NOW()),
+('','Sony', '', NOW()),
+('','3D MAXpider', '', NOW()),
+('','Brembo', '', NOW()),
+('','Delphi', '', NOW()),
+('','Momo', '', NOW()),
+('','Monroe', '', NOW()),
+('','Febi', '', NOW()),
+('','OEM', '', NOW()),
+('','Depo', '', NOW());
+
+
+INSERT INTO categories (name, description, created_at, updated_at) VALUES
+('Batteries',   'Car batteries and related accessories', NOW(), NOW()),
+('Engine',      'Engine parts and components',            NOW(), NOW()),
+('Brakes',      'Brake systems and parts',                NOW(), NOW()),
+('Electrical',  'Electrical components and wiring',       NOW(), NOW()),
+('Lighting',    'Lights and lighting systems',            NOW(), NOW()),
+('Suspension',  'Suspension components',                  NOW(), NOW()),
+('Interior',    'Interior parts and accessories',         NOW(), NOW());
+
+
+INSERT INTO users (full_name, email, password, role) VALUES
+('AutoZone India', 'autozone@example.com', 'password123', 'seller'),
+('Bosch Spares India', 'bosch@example.com', 'password123', 'seller'),
+('TVS Spares Hub', 'tvs@example.com', 'password123', 'seller'),
+('MRF Tyre Center', 'mrf@example.com', 'password123', 'seller'),
+('AutoCare Solutions', 'autocare@example.com', 'password123', 'seller'),
+('Car Light Experts', 'carlight@example.com', 'password123', 'seller'),
+('Audio Garage', 'audiogarage@example.com', 'password123', 'seller'),
+('Car Decor India', 'cardecor@example.com', 'password123', 'seller'),
+('Performance Parts India', 'performance@example.com', 'password123', 'seller'),
+('Engine Parts Hub', 'engineparts@example.com', 'password123', 'seller'),
+('Performance Steering Co.', 'steering@example.com', 'password123', 'seller'),
+('Suspension Experts', 'suspension@example.com', 'password123', 'seller'),
+('Body Parts Depot', 'bodyparts@example.com', 'password123', 'seller'),
+('Auto Body Parts', 'autobody@example.com', 'password123', 'seller');
