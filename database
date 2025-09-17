@@ -1,166 +1,250 @@
-Create Database name: autoparts
+-- Create Database
+CREATE DATABASE IF NOT EXISTS vehicle_parts_db;
+USE vehicle_parts_db;
 
 
-Inside the autoparts database, click "SQL" tab
-Paste the following SQL code:
-
+-- Table 1: users
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    full_name VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    password VARCHAR(255),
-    role ENUM('admin', 'seller', 'buyer') DEFAULT 'buyer',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Orders Table (simplified version based on your structure)
-CREATE TABLE orders (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    total_amount DECIMAL(10,2) NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Create the categories table
-CREATE TABLE categories (
-  id int(11) NOT NULL AUTO_INCREMENT,
-  name varchar(100) NOT NULL,
-  description text DEFAULT NULL,
-  created_at timestamp NOT NULL DEFAULT current_timestamp(),
-  updated_at timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (id),
-  UNIQUE KEY name (name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Create the brands table
-CREATE TABLE brands (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create the products table with all fields
-CREATE TABLE products (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    seller_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
-    brand_id INT NOT NULL,
-    vehicle_type VARCHAR(50) NOT NULL,
-    compatible_models TEXT NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    category_id INT NOT NULL,
-    description TEXT NOT NULL,
-    image_path VARCHAR(255) NOT NULL,
-    availability VARCHAR(50) NOT NULL,
-    warranty VARCHAR(100) NOT NULL,
-    delivery_time VARCHAR(50) NOT NULL,
-    quantity INT DEFAULT 1,
+    email VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'buyer',
+    role_status VARCHAR(20) DEFAULT 'approved',
+    role_request VARCHAR(20) DEFAULT NULL,
+    role_reason TEXT DEFAULT NULL,
+    additional_info TEXT,
+    password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE RESTRICT,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
+    UNIQUE KEY (email)
+);
+
+-- Table 2: categories
+CREATE TABLE categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_name (name),
+    INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
+-- Table 3: parts
+CREATE TABLE parts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category_id INT NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
+    stock_quantity INT NOT NULL CHECK (stock_quantity >= 0),
+    image_url VARCHAR(512),
+    seller_id INT NOT NULL,
+    status ENUM('active', 'inactive', 'draft') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_seller_id (seller_id),
+    INDEX idx_category_id (category_id),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
--- Order Items Table
+-- Table 4: cart_items
+CREATE TABLE cart_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    buyer_id INT,
+    product_id INT,
+    quantity INT NOT NULL DEFAULT 1,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY buyer_id (buyer_id),
+    KEY product_id (product_id)
+);
+
+
+-- Table 5: complaints
+CREATE TABLE complaints (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    complainant_id INT NOT NULL,
+    against_id INT NOT NULL,
+    part_id INT,
+    order_id INT,
+    reason TEXT NOT NULL,
+    evidence TEXT,
+    status ENUM('pending','reviewed','action_taken','dismissed') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table 6: knowledge_base
+CREATE TABLE knowledge_base (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    category ENUM('returns','payments','orders','accounts','general') DEFAULT 'general',
+    author_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Table 7: notifications
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY user_id (user_id),
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Table 8: orders
+CREATE TABLE orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    buyer_id INT NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status ENUM('pending','processing','shipped','delivered','cancelled') DEFAULT 'pending',
+    shipping_name VARCHAR(100) NOT NULL,
+    shipping_email VARCHAR(100) NOT NULL,
+    shipping_phone VARCHAR(20) NOT NULL,
+    shipping_address TEXT NOT NULL,
+    shipping_city VARCHAR(50) NOT NULL,
+    shipping_state VARCHAR(50) NOT NULL,
+    shipping_zip_code VARCHAR(10) NOT NULL,
+    shipping_country VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY buyer_id (buyer_id),
+    CONSTRAINT fk_orders_buyer FOREIGN KEY (buyer_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Table 9: order_items
 CREATE TABLE order_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
-    product_id INT NOT NULL,
+    part_id INT NOT NULL,
     quantity INT NOT NULL,
     price DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders(id),
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    KEY order_id (order_id),
+    KEY part_id (part_id),
+    CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_order_items_part FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE CASCADE
 );
 
 
-
-
--- Complaints Table
-CREATE TABLE complaints (
+-- Table 10: wishlists
+CREATE TABLE wishlists (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    order_id INT,
-    subject VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    status VARCHAR(20) DEFAULT 'open',
+    part_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (order_id) REFERENCES orders(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_part (user_id, part_id),
+    KEY part_id (part_id)
 );
 
+-- Table 11: reviews
 CREATE TABLE reviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    product_id INT NOT NULL,
-    user_id INT NOT NULL,
-    order_id INT NOT NULL,
-    rating INT NOT NULL,
+    part_id INT NOT NULL,
+    buyer_id INT NOT NULL,
+    rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
     comment TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (product_id) REFERENCES products(id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (order_id) REFERENCES orders(id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    status ENUM('active', 'hidden', 'reported') DEFAULT 'active',
+    
+    FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE CASCADE,
+    FOREIGN KEY (buyer_id) REFERENCES users(id) ON DELETE CASCADE,
+    
+    UNIQUE KEY unique_buyer_part (buyer_id, part_id), -- One review per buyer per part
+    INDEX idx_part_id (part_id),
+    INDEX idx_buyer_id (buyer_id),
+    INDEX idx_rating (rating)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- Table 12: tickets
+CREATE TABLE tickets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    subject VARCHAR(256) NOT NULL,
+    message TEXT NOT NULL,
+    category VARCHAR(50) DEFAULT 'other',
+    status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
+    priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    sender_role ENUM('buyer', 'seller', 'support') DEFAULT 'buyer',
+    created_by_role VARCHAR(50) NOT NULL,
+    resolved_at DATETIME DEFAULT NULL,
+    resolved_by INT UNSIGNED DEFAULT NULL,
+    closed_at DATETIME DEFAULT NULL,
+    
+    KEY user_id (user_id),
+    KEY status (status),
+    KEY priority (priority),
+    KEY sender_role (sender_role),
+    KEY created_at (created_at),
+    KEY updated_at (updated_at),
+    
+    CONSTRAINT fk_tickets_user 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 
+-- Table 13: ticket_replies
+CREATE TABLE ticket_replies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    sender_role ENUM('buyer', 'seller', 'support') NOT NULL,
+    message TEXT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_system TINYINT(1) DEFAULT 0,
+    
+    KEY ticket_id (ticket_id),
+    KEY sender_id (sender_id),
+    KEY is_read (is_read),
+    KEY created_at (created_at),
+    KEY sender_role (sender_role),
+    KEY is_system (is_system),
+    
+    CONSTRAINT fk_ticket_replies_ticket 
+        FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+        
+    CONSTRAINT fk_ticket_replies_sender 
+        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
 
+-- Table 14: admin_logs table if it doesn't exist
+CREATE TABLE IF NOT EXISTS admin_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    target_user_id INT NOT NULL,
+    details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES users(id),
+    FOREIGN KEY (target_user_id) REFERENCES users(id)
+);
 
 
-
-INSERT INTO brands (id, name, description, created_at) VALUES
-('','Exide', '', NOW()),
-('','Bosch', '', NOW()),
-('','TVS', '', NOW()),
-('','MRF', '', NOW()),
-('','Hella', '', NOW()),
-('','Sony', '', NOW()),
-('','3D MAXpider', '', NOW()),
-('','Brembo', '', NOW()),
-('','Delphi', '', NOW()),
-('','Momo', '', NOW()),
-('','Monroe', '', NOW()),
-('','Febi', '', NOW()),
-('','OEM', '', NOW()),
-('','Depo', '', NOW());
-
-
--- Insert categories
-INSERT INTO categories (name, description, created_at, updated_at) VALUES
-('Batteries', 'Car batteries and related accessories', NOW(), NOW()),
-('Engine', 'Engine parts and components', NOW(), NOW()),
-('Brakes', 'Brake systems and parts', NOW(), NOW()),
-('Brake System', 'Brake pads, discs, and calipers', NOW(), NOW()),
-('Electrical', 'Electrical components and wiring', NOW(), NOW()),
-('Lighting', 'Lights and lighting systems', NOW(), NOW()),
-('Suspension', 'Suspension components', NOW(), NOW()),
-('Suspension and Arms', 'Shock absorbers and suspension arms', NOW(), NOW()),
-('Interior', 'Interior parts and accessories', NOW(), NOW()),
-('Interior and comfort', 'Audio, steering wheels, mats, multimedia', NOW(), NOW()),
-('Filters', 'Oil, air, and fuel filters', NOW(), NOW()),
-('Tyres and Alloys', 'Tyres, alloy wheels, and related accessories', NOW(), NOW()),
-('Wiper Blades', 'Windshield wipers and washer accessories', NOW(), NOW()),
-('Body Parts', 'Bumpers, headlights, panels, and other body parts', NOW(), NOW());
-
-
-INSERT INTO users (full_name, email, password, role) VALUES
-('AutoZone India', 'autozone@example.com', 'password123', 'seller'),
-('Bosch Spares India', 'bosch@example.com', 'password123', 'seller'),
-('TVS Spares Hub', 'tvs@example.com', 'password123', 'seller'),
-('MRF Tyre Center', 'mrf@example.com', 'password123', 'seller'),
-('AutoCare Solutions', 'autocare@example.com', 'password123', 'seller'),
-('Car Light Experts', 'carlight@example.com', 'password123', 'seller'),
-('Audio Garage', 'audiogarage@example.com', 'password123', 'seller'),
-('Car Decor India', 'cardecor@example.com', 'password123', 'seller'),
-('Performance Parts India', 'performance@example.com', 'password123', 'seller'),
-('Engine Parts Hub', 'engineparts@example.com', 'password123', 'seller'),
-('Performance Steering Co.', 'steering@example.com', 'password123', 'seller'),
-('Suspension Experts', 'suspension@example.com', 'password123', 'seller'),
-('Body Parts Depot', 'bodyparts@example.com', 'password123', 'seller'),
-('Auto Body Parts', 'autobody@example.com', 'password123', 'seller');
+-- Table 15: settings
+CREATE table settings (
+    id int primary key auto_increment,
+    site_name varchar(255) not null,
+    contact_emailvarchar(255) not null,
+    phonevarchar(50) not null,
+    addressvarchar(255) not null,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp on update current_timestamp
+);
